@@ -84,7 +84,7 @@ WHERE (datediff (dtEntregue, dtEstimativaEntrega) < 2)
 
 SELECT *
 FROM silver_olist.pedido
-WHERE (month (dtPedido)=12) AND (year(dtPedido)=2017) AND dtEstimativaEntrega < dtEntregue 
+WHERE (month (dtPedido)=12) AND (year(dtPedido)=2017) AND date (dtEstimativaEntrega) < date (dtEntregue) 
 
 
 -- COMMAND ----------
@@ -101,8 +101,43 @@ WHERE vlNota <= '4'
 
 -- Lista de pedidos com 2 ou mais parcelas menores que R$20
 
-SELECT *
+SELECT *,
+vlPagamento / nrPacelas AS vlParcela
 FROM silver_olist.pagamento_pedido
-WHERE nrPacelas >= '2' AND vlPagamento < '20.00' 
+WHERE nrPacelas >= 2
+AND vlPagamento / nrPacelas  < 20
 
 
+
+-- COMMAND ----------
+
+-- todos os pedidos, marque se houve atraso ou não
+SELECT *
+FROM silver_olist.pedido
+WHERE dtEntregue > dtEstimativaEntrega 
+
+
+-- COMMAND ----------
+
+    -- case 02 - selecione os itens de pedidos e defina os grupos em uma nova coluna
+    -- para frete inferior a 10%: "10%"
+    -- para frete entre 10 e 25% :
+    -- 25% e 50%
+    -- maior que 50%
+
+
+    -- ctrl + barra comenta todas as linhas selecionadas
+    
+    
+SELECT *,
+  vlPreco + vlFrete AS vlTotal,
+  vlFrete / (vlPreco + vlFrete) AS pctFrete,
+  
+CASE 
+  WHEN vlFrete / (vlPreco + vlFrete) <=0.1 THEN '10%'
+  WHEN vlFrete / (vlPreco + vlFrete) <=0.25 THEN '10% a 25%'
+  WHEN vlFrete / (vlPreco + vlFrete) <=0.5 THEN '25% a 50%'
+  ELSE '+50%'
+END AS descFretePct
+   
+FROM silver_olist.item_pedido
